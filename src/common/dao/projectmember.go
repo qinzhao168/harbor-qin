@@ -16,15 +16,16 @@ package dao
 
 import (
 	"github.com/vmware/harbor/src/common/models"
+	"time"
 )
 
 // AddProjectMember inserts a record to table project_member
 func AddProjectMember(projectID int64, userID int, role int) error {
 	o := GetOrmer()
 
-	sql := "insert into project_member (project_id, user_id , role) values (?, ?, ?)"
+	sql := "insert into project_member (project_id, user_id , role, creation_time, update_time) values (?, ?, ?, ?, ?)"
 
-	_, err := o.Raw(sql, projectID, userID, role).Exec()
+	_, err := o.Raw(sql, projectID, userID, role, time.Now(), time.Now()).Exec()
 
 	return err
 }
@@ -33,9 +34,9 @@ func AddProjectMember(projectID int64, userID int, role int) error {
 func UpdateProjectMember(projectID int64, userID int, role int) error {
 	o := GetOrmer()
 
-	sql := "update project_member set role = ? where project_id = ? and user_id = ?"
+	sql := "update project_member set role = ? , update_time= ? where project_id = ? and user_id = ?"
 
-	_, err := o.Raw(sql, role, projectID, userID).Exec()
+	_, err := o.Raw(sql, role,time.Now(), projectID, userID).Exec()
 
 	return err
 }
