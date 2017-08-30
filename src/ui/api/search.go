@@ -127,11 +127,16 @@ func filterRepositories(projects []models.Project, keyword string) (
 		r := repositories[i]
 		p, _ := utils.ParseRepository(r.Name)
 		d := strings.Compare(p, projects[j].Name)
-		if d < 0 {
-			i++
+		if d != 0 {
+			j++
+			if j == len(projects){
+				j=0
+				i++
+			}
 			continue
-		} else if d == 0 {
+		} else {
 			i++
+			j=0
 			if len(keyword) != 0 && !strings.Contains(r.Name, keyword) {
 				continue
 			}
@@ -151,9 +156,10 @@ func filterRepositories(projects []models.Project, keyword string) (
 			*/
 
 			result = append(result, entry)
-		} else {
-			j++
 		}
+		//else {
+		//	j++
+		//}
 	}
 	return result, nil
 }
