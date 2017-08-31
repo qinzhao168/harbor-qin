@@ -47,10 +47,9 @@ func GetRepositoryByName(name string) (*models.RepoRecord, error) {
 
 // GetAllRepositories ...
 func GetAllRepositories() ([]models.RepoRecord, error) {
-	o := GetOrmer()
+	sql := `select * from repository order by substring_index(name,'/',1)`
 	var repos []models.RepoRecord
-	_, err := o.QueryTable("repository").
-		OrderBy("Name").All(&repos)
+	_, err := GetOrmer().Raw(sql).QueryRows(&repos)
 	return repos, err
 }
 
