@@ -136,8 +136,8 @@ func filterRepositories(projects []models.Project, keyword string) (
 			continue
 		} else {
 			i++
-			j=0
 			if len(keyword) != 0 && !strings.Contains(r.Name, keyword) {
+				j=0
 				continue
 			}
 			entry := make(map[string]interface{})
@@ -156,6 +156,7 @@ func filterRepositories(projects []models.Project, keyword string) (
 			*/
 
 			result = append(result, entry)
+			j=0
 		}
 		//else {
 		//	j++
