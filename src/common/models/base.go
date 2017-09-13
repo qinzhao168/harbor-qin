@@ -22,6 +22,7 @@ func init() {
 	orm.RegisterModel(new(RepTarget),
 		new(RepPolicy),
 		new(RepJob),
+		new(RepSource),
 		new(User),
 		new(Project),
 		new(Role),

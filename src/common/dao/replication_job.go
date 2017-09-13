@@ -41,6 +41,17 @@ func GetRepTarget(id int64) (*models.RepTarget, error) {
 	return &t, err
 }
 
+// GetRepTarget ...
+func GetRepSource(id int64) (*models.RepSource, error) {
+	o := GetOrmer()
+	t := models.RepSource{ID: id}
+	err := o.Read(&t)
+	if err == orm.ErrNoRows {
+		return nil, nil
+	}
+	return &t, err
+}
+
 // GetRepTargetByName ...
 func GetRepTargetByName(name string) (*models.RepTarget, error) {
 	o := GetOrmer()

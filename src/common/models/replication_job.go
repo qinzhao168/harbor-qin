@@ -52,6 +52,7 @@ type RepPolicy struct {
 	ProjectID   int64  `orm:"column(project_id)" json:"project_id"`
 	ProjectName string `json:"project_name,omitempty"`
 	TargetID    int64  `orm:"column(target_id)" json:"target_id"`
+	SourceID    int64  `orm:"column(source_id)" json:"source_id"`
 	TargetName  string `json:"target_name,omitempty"`
 	Name        string `orm:"column(name)" json:"name"`
 	//	Target       RepTarget `orm:"-" json:"target"`
@@ -98,6 +99,7 @@ type RepJob struct {
 	ID         int64    `orm:"column(id)" json:"id"`
 	Status     string   `orm:"column(status)" json:"status"`
 	Repository string   `orm:"column(repository)" json:"repository"`
+	SrcRepo string   `orm:"column(src_repo)" json:"src_repo"`
 	PolicyID   int64    `orm:"column(policy_id)" json:"policy_id"`
 	Operation  string   `orm:"column(operation)" json:"operation"`
 	Tags       string   `orm:"column(tags)" json:"-"`
@@ -118,6 +120,19 @@ type RepTarget struct {
 	CreationTime time.Time `orm:"column(creation_time);auto_now_add" json:"creation_time"`
 	UpdateTime   time.Time `orm:"column(update_time);auto_now" json:"update_time"`
 }
+
+type RepSource struct {
+	ID           int64     `orm:"column(id)" json:"id"`
+	URL          string    `orm:"column(url)" json:"endpoint"`
+	AuthURL          string    `orm:"column(auth_url)" json:"auth_url"`
+	Name         string    `orm:"column(name)" json:"name"`
+	Username     string    `orm:"column(username)" json:"username"`
+	Password     string    `orm:"column(password)" json:"password"`
+	Type         int       `orm:"column(source_type)" json:"type"`
+	CreationTime time.Time `orm:"column(creation_time);auto_now_add" json:"creation_time"`
+	UpdateTime   time.Time `orm:"column(update_time);auto_now" json:"update_time"`
+}
+
 
 // Valid ...
 func (r *RepTarget) Valid(v *validation.Validation) {
@@ -149,6 +164,10 @@ func (r *RepTarget) Valid(v *validation.Validation) {
 //TableName is required by by beego orm to map RepTarget to table replication_target
 func (r *RepTarget) TableName() string {
 	return "replication_target"
+}
+
+func (r *RepSource) TableName() string {
+	return "replication_source"
 }
 
 //TableName is required by by beego orm to map RepJob to table replication_job

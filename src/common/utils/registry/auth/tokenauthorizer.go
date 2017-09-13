@@ -167,7 +167,7 @@ func NewStandardTokenAuthorizer(credential Credential, insecure bool,
 
 func (s *standardTokenAuthorizer) generateToken(realm, service string, scopes []string) (token string, expiresIn int, issuedAt *time.Time, err error) {
 	realm = s.tokenURL(realm)
-
+	log.Infof("realm:%s ,%s, %s" , realm,service,scopes)
 	u, err := url.Parse(realm)
 	if err != nil {
 		return

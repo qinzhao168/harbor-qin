@@ -60,7 +60,11 @@ type BaseHandler struct {
 	tags       []string
 
 	srcURL    string // url of source registry
+	srcRepo   string
 	srcSecret string
+	srcAuthURL string
+	srcUsr string // username ...
+	srcPwd string // password ...
 
 	dstURL string // url of target registry
 	dstUsr string // username ...
@@ -81,14 +85,16 @@ type BaseHandler struct {
 }
 
 // InitBaseHandler initializes a BaseHandler.
-func InitBaseHandler(repository, srcURL, srcSecret,
+func InitBaseHandler(repository, srcURL, srcSecret,srcAuthURL,srcRepo,
 	dstURL, dstUsr, dstPwd string, insecure bool, tags []string, logger *log.Logger) *BaseHandler {
 
 	base := &BaseHandler{
 		repository:     repository,
 		tags:           tags,
 		srcURL:         srcURL,
+		srcRepo:	srcRepo,
 		srcSecret:      srcSecret,
+		srcAuthURL:     srcAuthURL,
 		dstURL:         dstURL,
 		dstUsr:         dstUsr,
 		dstPwd:         dstPwd,
@@ -136,8 +142,22 @@ func (i *Initializer) Enter() (string, error) {
 func (i *Initializer) enter() (string, error) {
 	c := &http.Cookie{Name: models.UISecretCookie, Value: i.srcSecret}
 	srcCred := auth.NewCookieCredential(c)
+
+	//add by chenxiaoyu for public docker images pull
+	i.logger.Infof("srcAuthURL: %v ,srcRepo :%v",i.srcAuthURL,i.srcRepo)
+	tokenServiceEndpoint := config.InternalTokenServiceEndpoint()
+	if len(i.srcAuthURL) >0{
+		tokenServiceEndpoint = i.srcAuthURL
+	}
+	srcRepo :=  i.repository
+	if len(i.srcRepo) >0{
+		repoAndtTag := strings.Split(i.srcRepo,":")
+		srcRepo = repoAndtTag[0]
+		i.tags =append(i.tags,repoAndtTag[1])
+	}
+	//"pull", "push", "*" change to pull
 	srcClient, err := newRepositoryClient(i.srcURL, i.insecure, srcCred,
-		config.InternalTokenServiceEndpoint(), i.repository, "repository", i.repository, "pull", "push", "*")
+		tokenServiceEndpoint, srcRepo, "repository", srcRepo, "pull")
 	if err != nil {
 		i.logger.Errorf("an error occurred while creating source repository client: %v", err)
 		return "", err
@@ -292,7 +312,13 @@ func (m *ManifestPuller) enter() (string, error) {
 	}
 
 	name := m.repository
-	tag := m.tags[0]
+	tag  := m.tags[0]
+	if len(m.srcRepo)>0{
+		nameAndTag := strings.Split(m.srcRepo,":")
+		name = nameAndTag[0]
+		tag  = nameAndTag[1]
+	}
+
 
 	acceptMediaTypes := []string{schema1.MediaTypeManifest, schema2.MediaTypeManifest}
 	digest, mediaType, payload, err := m.srcClient.PullManifest(tag, acceptMediaTypes)
@@ -367,7 +393,7 @@ func (b *BlobTransfer) enter() (string, error) {
 	name := b.repository
 	tag := b.tags[0]
 	for _, blob := range b.blobs {
-		b.logger.Infof("transferring blob %s of %s:%s to %s ...", blob, name, tag, b.dstURL)
+		b.logger.Infof("transferring blob %s from %s, to %s:%s with %s ...", blob,b.srcRepo, name, tag, b.dstURL)
 		size, data, err := b.srcClient.PullBlob(blob)
 		if err != nil {
 			b.logger.Errorf("an error occurred while pulling blob %s of %s:%s from %s: %v", blob, name, tag, b.srcURL, err)

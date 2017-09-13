@@ -144,6 +144,55 @@ func TriggerReplication(policyID int64, repository string,
 	return fmt.Errorf("%d %s", resp.StatusCode, string(b))
 }
 
+// TriggerReplication triggers the replication according to the policy
+func PostReplication(policyID int64, repository string,
+tags []string, operation,srcRepo string) error {
+	data := struct {
+		PolicyID  int64    `json:"policy_id"`
+		Repo      string   `json:"repository"`
+		Operation string   `json:"operation"`
+		SrcRepo   string   `json:"src_repo"`
+		TagList   []string `json:"tags"`
+	}{
+		PolicyID:  policyID,
+		Repo:      repository,
+		TagList:   tags,
+		Operation: operation,
+		SrcRepo:   srcRepo,
+	}
+
+	b, err := json.Marshal(&data)
+	if err != nil {
+		return err
+	}
+
+	url := buildReplicationURL()
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	addAuthentication(req)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	}
+
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return fmt.Errorf("%d %s", resp.StatusCode, string(b))
+}
+
 // GetPoliciesByRepository returns policies according the repository
 func GetPoliciesByRepository(repository string) ([]*models.RepPolicy, error) {
 	repository = strings.TrimSpace(repository)

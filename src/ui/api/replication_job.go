@@ -181,3 +181,15 @@ func (ra *RepJobAPI) GetLog() {
 }
 
 //TODO:add Post handler to call job service API to submit jobs by policy
+
+// Post
+func (ra *RepJobAPI) Post() {
+	job := &models.RepJob{}
+	ra.DecodeJSONReqAndValidate(job)
+	err := PostReplication(job.PolicyID,job.Repository,job.TagList,job.Operation,job.SrcRepo)
+	if err !=nil{
+		log.Errorf("failed to create job: %v", err)
+		ra.CustomAbort(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	}
+	return
+}

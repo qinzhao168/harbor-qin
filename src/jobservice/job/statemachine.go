@@ -30,6 +30,13 @@ import (
 // RepJobParm wraps the parm of a job
 type RepJobParm struct {
 	LocalRegURL    string
+
+	srcURL      string
+	srcUsername string
+	srcPassword string
+	srcAuthURL string
+	srcRepository     string
+
 	TargetURL      string
 	TargetUsername string
 	TargetPassword string
@@ -218,9 +225,21 @@ func (sm *SM) Reset(jid int64) (err error) {
 	if err != nil {
 		return err
 	}
+	srcAuthURL := ""
+	source, err := dao.GetRepSource(policy.SourceID)
+	if err != nil {
+		return fmt.Errorf("Failed to get source, error: %v", err)
+	}
+	if source != nil{
+		regURL = source.URL
+		srcAuthURL = source.AuthURL
+	}
+
 	sm.Parms = &RepJobParm{
 		LocalRegURL: regURL,
+		srcAuthURL:  srcAuthURL,
 		Repository:  job.Repository,
+		srcRepository:job.SrcRepo,
 		Tags:        job.TagList,
 		Enabled:     policy.Enabled,
 		Operation:   job.Operation,
@@ -284,7 +303,7 @@ func addTestTransition(sm *SM) error {
 }
 
 func addImgTransferTransition(sm *SM) {
-	base := replication.InitBaseHandler(sm.Parms.Repository, sm.Parms.LocalRegURL, config.JobserviceSecret(),
+	base := replication.InitBaseHandler(sm.Parms.Repository, sm.Parms.LocalRegURL, config.JobserviceSecret(),sm.Parms.srcAuthURL,sm.Parms.srcRepository,
 		sm.Parms.TargetURL, sm.Parms.TargetUsername, sm.Parms.TargetPassword,
 		sm.Parms.Insecure, sm.Parms.Tags, sm.Logger)
 

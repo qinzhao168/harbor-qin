@@ -24,6 +24,7 @@ import (
 	"github.com/docker/distribution/registry/client/auth/challenge"
 	"github.com/vmware/harbor/src/common/utils"
 	"github.com/vmware/harbor/src/common/utils/registry"
+	"github.com/cloudflare/cfssl/log"
 )
 
 // Authorizer authorizes requests according to the schema
@@ -52,6 +53,7 @@ func NewAuthorizerStore(endpoint string, insecure bool, authorizers ...Authorize
 	}
 
 	pingURL := buildPingURL(endpoint)
+	log.Infof("pingURL: %v",pingURL)
 	resp, err := client.Get(pingURL)
 	if err != nil {
 		return nil, err
