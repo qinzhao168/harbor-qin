@@ -156,9 +156,9 @@ func (r *RepTarget) Valid(v *validation.Validation) {
 
 	// password is encoded using base64, the length of this field
 	// in DB is 64, so the max length in request is 48
-	if len(r.Password) > 48 {
-		v.SetError("password", "max length is 48")
-	}
+	//if len(r.Password) > 48 {
+	//	v.SetError("password", "max length is 48")
+	//}
 }
 
 //TableName is required by by beego orm to map RepTarget to table replication_target
