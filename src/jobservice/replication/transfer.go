@@ -33,6 +33,7 @@ import (
 	"github.com/vmware/harbor/src/common/utils/registry"
 	"github.com/vmware/harbor/src/common/utils/registry/auth"
 	"github.com/vmware/harbor/src/jobservice/config"
+	"github.com/vmware/harbor/src/jobservice/driver"
 )
 
 const (
@@ -48,8 +49,8 @@ const (
 	StatePushManifest = "push_manifest"
 )
 const (
-	HARBOR = "harbor"
-	HUAWEI = "huawei"
+	HARBOR = iota
+	HUAWEI
 )
 var (
 	// ErrConflict represents http 409 error
@@ -72,8 +73,8 @@ type BaseHandler struct {
 	dstURL string // url of target registry
 	dstUsr string // username ...
 	dstPwd string // password ...
-	dstType string // password ...
-
+	dstType int // type 0 harbor 1 huawei ...
+	dstReg  Driver.Registry
 	insecure bool // whether skip secure check when using https
 
 	srcClient *registry.Repository
@@ -90,7 +91,7 @@ type BaseHandler struct {
 
 // InitBaseHandler initializes a BaseHandler.
 func InitBaseHandler(repository, srcURL, srcSecret,srcAuthURL,srcRepo,
-	dstURL, dstUsr, dstPwd string, insecure bool, tags []string, logger *log.Logger) *BaseHandler {
+	dstURL, dstUsr, dstPwd string,dstType int,dstReg Driver.Registry, insecure bool, tags []string, logger *log.Logger) *BaseHandler {
 
 	base := &BaseHandler{
 		repository:     repository,
@@ -102,6 +103,8 @@ func InitBaseHandler(repository, srcURL, srcSecret,srcAuthURL,srcRepo,
 		dstURL:         dstURL,
 		dstUsr:         dstUsr,
 		dstPwd:         dstPwd,
+		dstType:        dstType,
+		dstReg:         dstReg,
 		insecure:       insecure,
 		blobsExistence: make(map[string]bool, 10),
 		logger:         logger,
@@ -216,7 +219,8 @@ func (c *Checker) enter() (string, error) {
 		return "", err
 	}
 
-	err = c.createProject(project.Public)
+	//err = c.createProject(project.Public)
+	err = c.dstReg.CreateProject(project.Name,project.Public)
 	if err == nil {
 		c.logger.Infof("project %s is created on %s with user %s", c.project, c.dstURL, c.dstUsr)
 		return StatePullManifest, nil

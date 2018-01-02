@@ -25,6 +25,7 @@ import (
 	"github.com/vmware/harbor/src/jobservice/config"
 	"github.com/vmware/harbor/src/jobservice/replication"
 	"github.com/vmware/harbor/src/jobservice/utils"
+	"github.com/vmware/harbor/src/jobservice/driver"
 )
 
 // RepJobParm wraps the parm of a job
@@ -40,6 +41,9 @@ type RepJobParm struct {
 	TargetURL      string
 	TargetUsername string
 	TargetPassword string
+	TargetType int
+	TargetReg Driver.Registry
+
 	Repository     string
 	Tags           []string
 	Enabled        int
@@ -226,7 +230,7 @@ func (sm *SM) Reset(jid int64) (err error) {
 		return err
 	}
 	srcAuthURL := ""
-	if policy.SourceID>0{
+	if policy.SourceID > 0{
 		source, err := dao.GetRepSource(policy.SourceID)
 		if err!=nil{
 			return fmt.Errorf("Failed to get source, error: %v", err)
@@ -258,8 +262,30 @@ func (sm *SM) Reset(jid int64) (err error) {
 	}
 	sm.Parms.TargetURL = target.URL
 	sm.Parms.TargetUsername = target.Username
-	pwd := target.Password
+	sm.Parms.TargetType = target.Type
+	switch target.Type  {
+	case replication.HARBOR:
+		sm.Parms.TargetReg =&Driver.HarborRegisty{
+			UserName:target.Username,
+			Password:target.Password,
+			Url:target.URL,
+			Insecure:!verify,
 
+		}
+	case replication.HUAWEI:
+		sm.Parms.TargetReg =&Driver.HuaweiRegisty{
+			UserName:target.Username,
+			Password:target.Password,
+			Url:target.URL,
+			Insecure:!verify,
+
+		}
+
+	default:
+		fmt.Errorf("the registry type %v not support now ",target.Type)
+	}
+
+	pwd := target.Password
 	if len(pwd) != 0 {
 		key, err := config.SecretKey()
 		if err != nil {
@@ -304,7 +330,7 @@ func addTestTransition(sm *SM) error {
 
 func addImgTransferTransition(sm *SM) {
 	base := replication.InitBaseHandler(sm.Parms.Repository, sm.Parms.LocalRegURL, config.JobserviceSecret(),sm.Parms.srcAuthURL,sm.Parms.srcRepository,
-		sm.Parms.TargetURL, sm.Parms.TargetUsername, sm.Parms.TargetPassword,
+		sm.Parms.TargetURL, sm.Parms.TargetUsername, sm.Parms.TargetPassword,sm.Parms.TargetType,sm.Parms.TargetReg,
 		sm.Parms.Insecure, sm.Parms.Tags, sm.Logger)
 
 	sm.AddTransition(models.JobRunning, replication.StateInitialize, &replication.Initializer{BaseHandler: base})
