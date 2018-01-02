@@ -47,7 +47,10 @@ const (
 	// StatePushManifest ...
 	StatePushManifest = "push_manifest"
 )
-
+const (
+	HARBOR = "harbor"
+	HUAWEI = "huawei"
+)
 var (
 	// ErrConflict represents http 409 error
 	ErrConflict = errors.New("conflict")
@@ -69,6 +72,7 @@ type BaseHandler struct {
 	dstURL string // url of target registry
 	dstUsr string // username ...
 	dstPwd string // password ...
+	dstType string // password ...
 
 	insecure bool // whether skip secure check when using https
 

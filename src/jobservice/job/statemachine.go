@@ -226,11 +226,11 @@ func (sm *SM) Reset(jid int64) (err error) {
 		return err
 	}
 	srcAuthURL := ""
-	source, err := dao.GetRepSource(policy.SourceID)
-	if err != nil {
-		return fmt.Errorf("Failed to get source, error: %v", err)
-	}
-	if source != nil{
+	if policy.SourceID>0{
+		source, err := dao.GetRepSource(policy.SourceID)
+		if err!=nil{
+			return fmt.Errorf("Failed to get source, error: %v", err)
+		}
 		regURL = source.URL
 		srcAuthURL = source.AuthURL
 	}

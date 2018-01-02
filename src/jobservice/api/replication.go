@@ -92,7 +92,7 @@ func (rj *ReplicationJob) Post() {
 		}
 		log.Debugf("repo list: %v", repoList)
 		for _, repo := range repoList {
-			err := rj.addJob(repo, data.PolicyID,"", models.RepOpTransfer)
+			err := rj.addJob(repo, data.PolicyID, models.RepOpTransfer,"")
 			if err != nil {
 				log.Errorf("Failed to insert job record, error: %v", err)
 				rj.RenderError(http.StatusInternalServerError, err.Error())
