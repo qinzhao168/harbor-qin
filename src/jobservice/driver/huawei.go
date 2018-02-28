@@ -1,6 +1,15 @@
 package Driver
 
 import (
+	//"bytes"
+	//"crypto/tls"
+	//"encoding/json"
+	//"fmt"
+	//"io/ioutil"
+	//"net/http"
+	//"strings"
+)
+import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -8,6 +17,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"github.com/vmware/harbor/src/jobservice/config"
 )
 
 type HuaweiRegisty struct {
@@ -19,11 +29,9 @@ type HuaweiRegisty struct {
 
 func (reg *HuaweiRegisty) CreateProject(ProjectName string,public int) error  {
 	project := struct {
-		ProjectName string `json:"project_name"`
-		Public      int    `json:"public"`
+		Namespace string `json:"namespace"`
 	}{
-		ProjectName: ProjectName,
-		Public:      public,
+		Namespace: config.HUAWEI_PREFIX + ProjectName,
 	}
 
 	data, err := json.Marshal(project)
@@ -31,13 +39,13 @@ func (reg *HuaweiRegisty) CreateProject(ProjectName string,public int) error  {
 		return err
 	}
 
-	url := strings.TrimRight(reg.Url, "/") + "/api/projects/"
+	url := strings.TrimRight(reg.Url, "/") + "/dockyard/v2/namespaces"
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
-
-	req.SetBasicAuth(reg.UserName, reg.Password)
+	req.Header.Set("Content-Type","application/json;charset=utf8")
+	req.Header.Set("X-Auth-Token",Generate())
 
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -56,17 +64,20 @@ func (reg *HuaweiRegisty) CreateProject(ProjectName string,public int) error  {
 
 	// version 0.1.1's reponse code is 200
 	if resp.StatusCode == http.StatusCreated ||
-		resp.StatusCode == http.StatusOK {
+		resp.StatusCode == http.StatusOK ||
+		resp.StatusCode == http.StatusConflict{
 		return nil
 	}
 
-	if resp.StatusCode == http.StatusConflict {
-		return ErrConflict
-	}
+	//if resp.StatusCode == http.StatusConflict {
+	//	return ErrConflict
+	//}
 
 	message, err := ioutil.ReadAll(resp.Body)
 
 
-	return fmt.Errorf("failed to create project %s on %s with user %s: %d %s",
-		ProjectName, reg.Url, reg.UserName, resp.StatusCode, string(message))
+	return fmt.Errorf("failed to create project %s on %s with para %s: %d %s",
+		ProjectName, url, string(data), resp.StatusCode, string(message))
+	return  nil
 }
+

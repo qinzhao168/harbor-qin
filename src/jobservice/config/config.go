@@ -30,6 +30,7 @@ const (
 	defaultKeyPath   string = "/etc/jobservice/key"
 	defaultLogDir    string = "/var/log/jobs"
 	secretCookieName string = "secret"
+	HUAWEI_PREFIX    string = "enncloud"
 )
 
 var (

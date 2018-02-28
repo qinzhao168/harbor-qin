@@ -33,15 +33,16 @@ type RepPolicyAPI struct {
 
 // Prepare validates whether the user has system admin role
 func (pa *RepPolicyAPI) Prepare() {
-	uid := pa.ValidateUser()
-	var err error
-	isAdmin, err := dao.IsAdminRole(uid)
-	if err != nil {
-		log.Errorf("Failed to Check if the user is admin, error: %v, uid: %d", err, uid)
-	}
-	if !isAdmin {
-		pa.CustomAbort(http.StatusForbidden, "")
-	}
+	//by chenxy
+	//uid := pa.ValidateUser()
+	//var err error
+	//isAdmin, err := dao.IsAdminRole(uid)
+	//if err != nil {
+	//	log.Errorf("Failed to Check if the user is admin, error: %v, uid: %d", err, uid)
+	//}
+	//if !isAdmin {
+	//	pa.CustomAbort(http.StatusForbidden, "")
+	//}
 }
 
 // Get ...

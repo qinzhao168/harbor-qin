@@ -108,7 +108,7 @@ func (t *tokenAuthorizer) Authorize(req *http.Request, params map[string]string)
 	} else {
 		token = cachedToken
 	}
-
+	log.Debug("call token authorizer")
 	req.Header.Add(http.CanonicalHeaderKey("Authorization"), fmt.Sprintf("Bearer %s", token))
 
 	return nil

@@ -47,16 +47,17 @@ func (t *TargetAPI) Prepare() {
 		t.CustomAbort(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
-	userID := t.ValidateUser()
-	isSysAdmin, err := dao.IsAdminRole(userID)
-	if err != nil {
-		log.Errorf("error occurred in IsAdminRole: %v", err)
-		t.CustomAbort(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-	}
-
-	if !isSysAdmin {
-		t.CustomAbort(http.StatusForbidden, http.StatusText(http.StatusForbidden))
-	}
+	//by chenxy ,not validate user
+	//userID := t.ValidateUser()
+	//isSysAdmin, err := dao.IsAdminRole(userID)
+	//if err != nil {
+	//	log.Errorf("error occurred in IsAdminRole: %v", err)
+	//	t.CustomAbort(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	//}
+	//
+	//if !isSysAdmin {
+	//	t.CustomAbort(http.StatusForbidden, http.StatusText(http.StatusForbidden))
+	//}
 }
 
 func (t *TargetAPI) ping(endpoint, username, password string) {

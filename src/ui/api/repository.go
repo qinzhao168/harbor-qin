@@ -362,7 +362,7 @@ func (ra *RepositoryAPI) GetTags() {
 
 }
 
-func listTag(client *registry.Repository) ([]string, error) {
+func listTag(client registry.RepositoryInterface) ([]string, error) {
 	tags := []string{}
 
 	ts, err := client.ListTag()
@@ -438,7 +438,7 @@ func (ra *RepositoryAPI) GetManifests() {
 	ra.ServeJSON()
 }
 
-func getManifest(client *registry.Repository,
+func getManifest(client registry.RepositoryInterface,
 	tag, version string) (*manifestResp, error) {
 	result := &manifestResp{}
 
@@ -480,7 +480,7 @@ func getManifest(client *registry.Repository,
 	return result, nil
 }
 
-func (ra *RepositoryAPI) initRepositoryClient(repoName string) (r *registry.Repository, err error) {
+func (ra *RepositoryAPI) initRepositoryClient(repoName string) (r registry.RepositoryInterface, err error) {
 	endpoint, err := config.RegistryURL()
 	if err != nil {
 		return nil, err
@@ -612,7 +612,7 @@ func getNotaryTargets(username string, repo string) ([]notary.Target, error) {
 }
 
 func newRepositoryClient(endpoint string, insecure bool, username, password, repository, scopeType, scopeName string,
-	scopeActions ...string) (*registry.Repository, error) {
+	scopeActions ...string) (registry.RepositoryInterface, error) {
 
 	credential := auth.NewBasicAuthCredential(username, password)
 

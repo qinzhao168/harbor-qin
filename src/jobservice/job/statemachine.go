@@ -263,6 +263,7 @@ func (sm *SM) Reset(jid int64) (err error) {
 	sm.Parms.TargetURL = target.URL
 	sm.Parms.TargetUsername = target.Username
 	sm.Parms.TargetType = target.Type
+	log.Debugf("Target reg type %d",target.Type)
 	switch target.Type  {
 	case replication.HARBOR:
 		sm.Parms.TargetReg =&Driver.HarborRegisty{
@@ -343,8 +344,17 @@ func addImgTransferTransition(sm *SM) {
 }
 
 func addImgDeleteTransition(sm *SM) {
-	deleter := replication.NewDeleter(sm.Parms.Repository, sm.Parms.Tags, sm.Parms.TargetURL,
-		sm.Parms.TargetUsername, sm.Parms.TargetPassword, sm.Parms.Insecure, sm.Logger)
+	var deleter StateHandler
+	log.Debugf("addImgDeleteTransition target type %d \n ",sm.Parms.TargetType)
+	if sm.Parms.TargetType == replication.HUAWEI{
+		log.Debug("addImgDeleteTransition huawei images \n")
+		deleter = replication.NewHuaweiDeleter(sm.Parms.Repository, sm.Parms.Tags, sm.Parms.TargetURL,
+			sm.Parms.TargetUsername, sm.Parms.TargetPassword, sm.Parms.Insecure, sm.Logger)
+	}else{
+		deleter = replication.NewDeleter(sm.Parms.Repository, sm.Parms.Tags, sm.Parms.TargetURL,
+			sm.Parms.TargetUsername, sm.Parms.TargetPassword, sm.Parms.Insecure, sm.Logger)
+	}
+
 
 	sm.AddTransition(models.JobRunning, replication.StateDelete, deleter)
 	sm.AddTransition(replication.StateDelete, models.JobFinished, &StatusUpdater{sm.JobID, models.JobFinished})

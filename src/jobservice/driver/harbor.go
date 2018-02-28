@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+
 )
 
 type HarborRegisty struct {
@@ -56,13 +57,14 @@ func (reg *HarborRegisty) CreateProject(ProjectName string,public int) error  {
 
 	// version 0.1.1's reponse code is 200
 	if resp.StatusCode == http.StatusCreated ||
-		resp.StatusCode == http.StatusOK {
+		resp.StatusCode == http.StatusOK||
+	        resp.StatusCode == http.StatusConflict{
 		return nil
 	}
 
-	if resp.StatusCode == http.StatusConflict {
-		return ErrConflict
-	}
+	//if resp.StatusCode == http.StatusConflict {
+	//	return replication.ErrConflict
+	//}
 
 	message, err := ioutil.ReadAll(resp.Body)
 

@@ -533,7 +533,7 @@ func getReposByProject(name string, keyword ...string) ([]string, error) {
 	return repositories, nil
 }
 
-func repositoryExist(name string, client *registry.Repository) (bool, error) {
+func repositoryExist(name string, client registry.RepositoryInterface) (bool, error) {
 	tags, err := client.ListTag()
 	if err != nil {
 		if regErr, ok := err.(*registry_error.Error); ok && regErr.StatusCode == http.StatusNotFound {
@@ -563,7 +563,7 @@ func NewRegistryClient(endpoint string, insecure bool, username, scopeType, scop
 
 // NewRepositoryClient ...
 func NewRepositoryClient(endpoint string, insecure bool, username, repository, scopeType, scopeName string,
-	scopeActions ...string) (*registry.Repository, error) {
+	scopeActions ...string) (registry.RepositoryInterface, error) {
 
 	authorizer := auth.NewRegistryUsernameTokenAuthorizer(username, scopeType, scopeName, scopeActions...)
 

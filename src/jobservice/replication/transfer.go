@@ -77,8 +77,8 @@ type BaseHandler struct {
 	dstReg  Driver.Registry
 	insecure bool // whether skip secure check when using https
 
-	srcClient *registry.Repository
-	dstClient *registry.Repository
+	srcClient registry.RepositoryInterface
+	dstClient registry.RepositoryInterface
 
 	manifest distribution.Manifest // manifest of tags[0]
 	digest   string                //digest of tags[0]'s manifest
@@ -163,7 +163,7 @@ func (i *Initializer) enter() (string, error) {
 		i.tags =append(i.tags,repoAndtTag[1])
 	}
 	//"pull", "push", "*" change to pull
-	srcClient, err := newRepositoryClient(i.srcURL, i.insecure, srcCred,
+	srcClient, err := newRepositoryClient(HARBOR,i.srcURL, i.insecure, srcCred,
 		tokenServiceEndpoint, srcRepo, "repository", srcRepo, "pull")
 	if err != nil {
 		i.logger.Errorf("an error occurred while creating source repository client: %v", err)
@@ -172,7 +172,7 @@ func (i *Initializer) enter() (string, error) {
 	i.srcClient = srcClient
 
 	dstCred := auth.NewBasicAuthCredential(i.dstUsr, i.dstPwd)
-	dstClient, err := newRepositoryClient(i.dstURL, i.insecure, dstCred,
+	dstClient, err := newRepositoryClient(i.dstType,i.dstURL, i.insecure, dstCred,
 		"", i.repository, "repository", i.repository, "pull", "push", "*")
 	if err != nil {
 		i.logger.Errorf("an error occurred while creating destination repository client: %v", err)
@@ -297,6 +297,7 @@ func (c *Checker) createProject(public int) error {
 
 // ManifestPuller pulls the manifest of a tag. And if no tag needs to be pulled,
 // the next state that state machine should enter is "finished".
+
 type ManifestPuller struct {
 	*BaseHandler
 }
@@ -485,9 +486,9 @@ func (m *ManifestPusher) enter() (string, error) {
 	return StatePullManifest, nil
 }
 
-func newRepositoryClient(endpoint string, insecure bool, credential auth.Credential,
+func newRepositoryClient(repotye int,endpoint string, insecure bool, credential auth.Credential,
 	tokenServiceEndpoint, repository, scopeType, scopeName string,
-	scopeActions ...string) (*registry.Repository, error) {
+	scopeActions ...string) (registry.RepositoryInterface, error) {
 	authorizer := auth.NewStandardTokenAuthorizer(credential, insecure,
 		tokenServiceEndpoint, scopeType, scopeName, scopeActions...)
 
@@ -499,13 +500,28 @@ func newRepositoryClient(endpoint string, insecure bool, credential auth.Credent
 	uam := &userAgentModifier{
 		userAgent: "harbor-registry-client",
 	}
+	var client registry.RepositoryInterface
+	if repotye == HUAWEI{
+		log.Debugf("create huawei repostory clinet with repo : %s \n",repository)
+		client, err = registry.NewRepositoryHuaweiWithModifiers(repository, endpoint, insecure, store, uam)
+		if err != nil{
+			log.Errorf("err create huawei repostory clinet %v \n ",err)
+		}
+	}else {
+		log.Debugf("create  standard clinet with repo :%s \n",repository)
+		client, err = registry.NewRepositoryWithModifiers(repository, endpoint, insecure, store, uam)
+		if err != nil{
+			log.Errorf("err create standard repostory clinet %v \n ",err)
+		}
+	}
 
-	client, err := registry.NewRepositoryWithModifiers(repository, endpoint, insecure, store, uam)
 	if err != nil {
 		return nil, err
 	}
 	return client, nil
 }
+
+
 
 type userAgentModifier struct {
 	userAgent string

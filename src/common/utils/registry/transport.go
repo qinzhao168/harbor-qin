@@ -47,7 +47,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	log.Debugf("%d | %s %s", resp.StatusCode, req.Method, req.URL.String())
+	log.Debugf("in round trip %d | %s %s", resp.StatusCode, req.Method, req.URL.String())
 
 	return resp, err
 }

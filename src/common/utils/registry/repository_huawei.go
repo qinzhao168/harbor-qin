@@ -17,7 +17,6 @@ package registry
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -31,17 +30,18 @@ import (
 
 	"github.com/vmware/harbor/src/common/utils"
 	registry_error "github.com/vmware/harbor/src/common/utils/registry/error"
+	"github.com/vmware/harbor/src/jobservice/config"
 )
 
-// Repository holds information of a repository entity
-type Repository struct {
+// RepositoryHuawei holds information of a repository entity
+type RepositoryHuawei struct {
 	Name     string
 	Endpoint *url.URL
 	client   *http.Client
 }
 
-// NewRepository returns an instance of Repository
-func NewRepository(name, endpoint string, client *http.Client) (*Repository, error) {
+// NewRepositoryHuawei returns an instance of RepositoryHuawei
+func NewRepositoryHuawei(name, endpoint string, client *http.Client) (*RepositoryHuawei, error) {
 	name = strings.TrimSpace(name)
 
 	u, err := utils.ParseEndpoint(endpoint)
@@ -49,8 +49,8 @@ func NewRepository(name, endpoint string, client *http.Client) (*Repository, err
 		return nil, err
 	}
 
-	repository := &Repository{
-		Name:     name,
+	repository := &RepositoryHuawei{
+		Name:     config.HUAWEI_PREFIX + name,
 		Endpoint: u,
 		client:   client,
 	}
@@ -58,28 +58,20 @@ func NewRepository(name, endpoint string, client *http.Client) (*Repository, err
 	return repository, nil
 }
 
-// NewRepositoryWithModifiers returns an instance of Repository according to the modifiers
-func NewRepositoryWithModifiers(name, endpoint string, insecure bool, modifiers ...Modifier) (RepositoryInterface, error) {
+// NewRepositoryHuaweiWithModifiers returns an instance of RepositoryHuawei according to the modifiers
+func NewRepositoryHuaweiWithModifiers(name, endpoint string, insecure bool, modifiers ...Modifier) (RepositoryInterface, error) {
 
 	transport := NewTransport(GetHTTPTransport(insecure), modifiers...)
-	return NewRepository(name, endpoint, &http.Client{
+	return NewRepositoryHuawei(name, endpoint, &http.Client{
 		Transport: transport,
 		//  for transferring large image, OS will handle i/o timeout
 		//	Timeout:   30 * time.Second,
 	})
 }
 
-func parseError(err error) error {
-	if urlErr, ok := err.(*url.Error); ok {
-		if regErr, ok := urlErr.Err.(*registry_error.Error); ok {
-			return regErr
-		}
-	}
-	return err
-}
 
 // ListTag ...
-func (r *Repository) ListTag() ([]string, error) {
+func (r *RepositoryHuawei) ListTag() ([]string, error) {
 	tags := []string{}
 	req, err := http.NewRequest("GET", buildTagListURL(r.Endpoint.String(), r.Name), nil)
 	if err != nil {
@@ -119,8 +111,8 @@ func (r *Repository) ListTag() ([]string, error) {
 }
 
 // ManifestExist ...
-func (r *Repository) ManifestExist(reference string) (digest string, exist bool, err error) {
-	req, err := http.NewRequest("HEAD", buildManifestURL(r.Endpoint.String(), r.Name, reference), nil)
+func (r *RepositoryHuawei) ManifestExist(reference string) (digest string, exist bool, err error) {
+	req, err := http.NewRequest("GET", buildManifestURL(r.Endpoint.String(), r.Name, reference), nil)
 	if err != nil {
 		return
 	}
@@ -159,7 +151,7 @@ func (r *Repository) ManifestExist(reference string) (digest string, exist bool,
 }
 
 // PullManifest ...
-func (r *Repository) PullManifest(reference string, acceptMediaTypes []string) (digest, mediaType string, payload []byte, err error) {
+func (r *RepositoryHuawei) PullManifest(reference string, acceptMediaTypes []string) (digest, mediaType string, payload []byte, err error) {
 	req, err := http.NewRequest("GET", buildManifestURL(r.Endpoint.String(), r.Name, reference), nil)
 	if err != nil {
 		return
@@ -197,7 +189,7 @@ func (r *Repository) PullManifest(reference string, acceptMediaTypes []string) (
 }
 
 // PushManifest ...
-func (r *Repository) PushManifest(reference, mediaType string, payload []byte) (digest string, err error) {
+func (r *RepositoryHuawei) PushManifest(reference, mediaType string, payload []byte) (digest string, err error) {
 	req, err := http.NewRequest("PUT", buildManifestURL(r.Endpoint.String(), r.Name, reference),
 		bytes.NewReader(payload))
 	if err != nil {
@@ -232,7 +224,7 @@ func (r *Repository) PushManifest(reference, mediaType string, payload []byte) (
 }
 
 // DeleteManifest ...
-func (r *Repository) DeleteManifest(digest string) error {
+func (r *RepositoryHuawei) DeleteManifest(digest string) error {
 	req, err := http.NewRequest("DELETE", buildManifestURL(r.Endpoint.String(), r.Name, digest), nil)
 	if err != nil {
 		return err
@@ -261,7 +253,7 @@ func (r *Repository) DeleteManifest(digest string) error {
 }
 
 // DeleteTag ...
-func (r *Repository) DeleteTag(tag string) error {
+func (r *RepositoryHuawei) DeleteTag(tag string) error {
 	digest, exist, err := r.ManifestExist(tag)
 	if err != nil {
 		return err
@@ -277,8 +269,8 @@ func (r *Repository) DeleteTag(tag string) error {
 }
 
 // BlobExist ...
-func (r *Repository) BlobExist(digest string) (bool, error) {
-	req, err := http.NewRequest("HEAD", buildBlobURL(r.Endpoint.String(), r.Name, digest), nil)
+func (r *RepositoryHuawei) BlobExist(digest string) (bool, error) {
+	req, err := http.NewRequest("GET", buildBlobURL(r.Endpoint.String(), r.Name, digest), nil)
 	if err != nil {
 		return false, err
 	}
@@ -310,7 +302,7 @@ func (r *Repository) BlobExist(digest string) (bool, error) {
 }
 
 // PullBlob : client must close data if it is not nil
-func (r *Repository) PullBlob(digest string) (size int64, data io.ReadCloser, err error) {
+func (r *RepositoryHuawei) PullBlob(digest string) (size int64, data io.ReadCloser, err error) {
 	req, err := http.NewRequest("GET", buildBlobURL(r.Endpoint.String(), r.Name, digest), nil)
 	if err != nil {
 		return
@@ -347,7 +339,62 @@ func (r *Repository) PullBlob(digest string) (size int64, data io.ReadCloser, er
 	return
 }
 
-func (r *Repository) initiateBlobUpload(name string) (location, uploadUUID string, err error) {
+func (r *RepositoryHuawei)patchUploads(uuid string, data io.Reader) (location, uploadUUID string, err error) {
+	req, err := http.NewRequest("PATCH", buildInitiateBlobUploadWithUuidURL(r.Endpoint.String(), r.Name, uuid), data)
+
+
+	resp, err := r.client.Do(req)
+	if nil != err {
+		err = parseError(err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if http.StatusCreated == resp.StatusCode || http.StatusAccepted == resp.StatusCode{
+		location = resp.Header.Get(http.CanonicalHeaderKey("Location"))
+		uploadUUID = resp.Header.Get(http.CanonicalHeaderKey("Docker-Upload-Uuid"))
+		return
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = &registry_error.Error{
+		StatusCode: resp.StatusCode,
+		Detail:     string(b),
+	}
+	return
+}
+
+func (r *RepositoryHuawei)putUploads( digest, uuid string) (err error) {
+	req, err := http.NewRequest("PUT", buildBlobUploadURL(r.Endpoint.String(), r.Name, uuid, digest), nil)
+
+	resp, err := r.client.Do(req)
+	if nil != err {
+		err = parseError(err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	if http.StatusAccepted == resp.StatusCode || http.StatusCreated == resp.StatusCode {
+		return
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	err = &registry_error.Error{
+		StatusCode: resp.StatusCode,
+		Detail:     string(b),
+	}
+	return
+}
+
+func (r *RepositoryHuawei) initiateBlobUpload(name string) (location, uploadUUID string, err error) {
 	req, err := http.NewRequest("POST", buildInitiateBlobUploadURL(r.Endpoint.String(), r.Name), nil)
 	req.Header.Set(http.CanonicalHeaderKey("Content-Length"), "0")
 
@@ -378,7 +425,7 @@ func (r *Repository) initiateBlobUpload(name string) (location, uploadUUID strin
 	return
 }
 
-func (r *Repository) monolithicBlobUpload(location, digest string, size int64, data io.Reader) error {
+func (r *RepositoryHuawei) monolithicBlobUpload(location, digest string, size int64, data io.Reader) error {
 	req, err := http.NewRequest("PUT", buildMonolithicBlobUploadURL(location, digest), data)
 	if err != nil {
 		return err
@@ -407,16 +454,20 @@ func (r *Repository) monolithicBlobUpload(location, digest string, size int64, d
 }
 
 // PushBlob ...
-func (r *Repository) PushBlob(digest string, size int64, data io.Reader) error {
-	location, _, err := r.initiateBlobUpload(r.Name)
+func (r *RepositoryHuawei) PushBlob(digest string, size int64, data io.Reader) error {
+	_, uuid, err := r.initiateBlobUpload(r.Name)
 	if err != nil {
 		return err
 	}
-	return r.monolithicBlobUpload(location, digest, size, data)
+	_,_,err = r.patchUploads(uuid, data)
+	if err != nil {
+		return err
+	}
+	return r.putUploads(digest, uuid)
 }
 
 // DeleteBlob ...
-func (r *Repository) DeleteBlob(digest string) error {
+func (r *RepositoryHuawei) DeleteBlob(digest string) error {
 	req, err := http.NewRequest("DELETE", buildBlobURL(r.Endpoint.String(), r.Name, digest), nil)
 	if err != nil {
 		return err
@@ -442,43 +493,4 @@ func (r *Repository) DeleteBlob(digest string) error {
 		StatusCode: resp.StatusCode,
 		Detail:     string(b),
 	}
-}
-
-func buildPingURL(endpoint string) string {
-	return fmt.Sprintf("%s/v2/", endpoint)
-}
-
-func buildTagListURL(endpoint, repoName string) string {
-	return fmt.Sprintf("%s/v2/%s/tags/list", endpoint, repoName)
-}
-
-func buildManifestURL(endpoint, repoName, reference string) string {
-	return fmt.Sprintf("%s/v2/%s/manifests/%s", endpoint, repoName, reference)
-}
-
-func buildBlobURL(endpoint, repoName, reference string) string {
-	return fmt.Sprintf("%s/v2/%s/blobs/%s", endpoint, repoName, reference)
-}
-
-func buildInitiateBlobUploadURL(endpoint, repoName string) string {
-	return fmt.Sprintf("%s/v2/%s/blobs/uploads/", endpoint, repoName)
-}
-
-func buildBlobUploadURL(endpoint, repoName, uuid , digest string) string {
-	return fmt.Sprintf("%s/v2/%s/blobs/uploads/%s?digest=%s", endpoint, repoName, uuid, digest)
-}
-
-func buildInitiateBlobUploadWithUuidURL(endpoint, repoName, uuid string) string {
-	return fmt.Sprintf("%s/v2/%s/blobs/uploads/%s", endpoint, repoName,uuid)
-}
-
-func buildMonolithicBlobUploadURL(location, digest string) string {
-	query := ""
-	if strings.ContainsRune(location, '?') {
-		query = "&"
-	} else {
-		query = "?"
-	}
-	query += fmt.Sprintf("digest=%s", digest)
-	return fmt.Sprintf("%s%s", location, query)
 }
