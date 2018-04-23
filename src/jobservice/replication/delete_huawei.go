@@ -80,12 +80,12 @@ func  spliteRep(repo string)([]string){
 func (d *HuaweiDeleter) enter() (string, error) {
 	nameSpace := spliteRep(d.repository)[0]
 	repo      := spliteRep(d.repository)[1]
-	url := strings.TrimRight(d.dstURL, "/") + "/dockyard/v2/domains/enncloud/namespaces/" + nameSpace + "/repositories/" + config.HUAWEI_PREFIX+repo + "/tags/"
-	log.Debugf("huawei deleter has been called with tags:%v \n ",d.tags)
+	url := strings.TrimRight(d.dstURL, "/") + "/dockyard/v2/domains/enncloud/namespaces/" + config.HUAWEI_PREFIX + nameSpace + "/repositories/" +repo + "/tags/"
+	d.logger.Infof("huawei deleter has been called with url %v and  tags:%v \n ",url , d.tags)
 	// delete repository
 	if len(d.tags) == 0 {
-		u := url + "/tags"
-		if err := del_huawei(u, d.dstUsr, d.dstPwd, d.insecure); err != nil {
+
+		if err := del_huawei(url, d.dstUsr, d.dstPwd, d.insecure); err != nil {
 			if err == errNotFound {
 				d.logger.Warningf("repository %s does not exist on %s", d.repository, d.dstURL)
 				return models.JobFinished, nil
@@ -101,7 +101,7 @@ func (d *HuaweiDeleter) enter() (string, error) {
 
 	}
 
-	// delele tags
+	// delete tags
 	for _, tag := range d.tags {
 		u := url + tag
 		if err := del_huawei(u, d.dstUsr, d.dstPwd, d.insecure); err != nil {
@@ -136,8 +136,16 @@ func del_huawei(url, username, password string, insecure bool) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Errorf("err send delete request %v \n",err)
 		return err
 	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("err get huawei delete body %v \n",err)
+		return err
+	}
+
+	log.Debugf("delete huawei registry url: %v ,and response : %v \n",url ,string(body))
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK  || resp.StatusCode == http.StatusNoContent {
