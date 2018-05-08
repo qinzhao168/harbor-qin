@@ -52,6 +52,7 @@ const (
 	HARBOR = iota
 	HUAWEI
 )
+
 var (
 	// ErrConflict represents http 409 error
 	ErrConflict = errors.New("conflict")
@@ -63,18 +64,18 @@ type BaseHandler struct {
 	repository string // prject_name/repo_name
 	tags       []string
 
-	srcURL    string // url of source registry
-	srcRepo   string
-	srcSecret string
+	srcURL     string // url of source registry
+	srcRepo    string
+	srcSecret  string
 	srcAuthURL string
-	srcUsr string // username ...
-	srcPwd string // password ...
+	srcUsr     string // username ...
+	srcPwd     string // password ...
 
-	dstURL string // url of target registry
-	dstUsr string // username ...
-	dstPwd string // password ...
-	dstType int // type 0 harbor 1 huawei ...
-	dstReg  Driver.Registry
+	dstURL   string // url of target registry
+	dstUsr   string // username ...
+	dstPwd   string // password ...
+	dstType  int    // type 0 harbor 1 huawei ...
+	dstReg   Driver.Registry
 	insecure bool // whether skip secure check when using https
 
 	srcClient registry.RepositoryInterface
@@ -90,14 +91,14 @@ type BaseHandler struct {
 }
 
 // InitBaseHandler initializes a BaseHandler.
-func InitBaseHandler(repository, srcURL, srcSecret,srcAuthURL,srcRepo,
-	dstURL, dstUsr, dstPwd string,dstType int,dstReg Driver.Registry, insecure bool, tags []string, logger *log.Logger) *BaseHandler {
+func InitBaseHandler(repository, srcURL, srcSecret, srcAuthURL, srcRepo,
+	dstURL, dstUsr, dstPwd string, dstType int, dstReg Driver.Registry, insecure bool, tags []string, logger *log.Logger) *BaseHandler {
 
 	base := &BaseHandler{
 		repository:     repository,
 		tags:           tags,
 		srcURL:         srcURL,
-		srcRepo:	srcRepo,
+		srcRepo:        srcRepo,
 		srcSecret:      srcSecret,
 		srcAuthURL:     srcAuthURL,
 		dstURL:         dstURL,
@@ -151,19 +152,19 @@ func (i *Initializer) enter() (string, error) {
 	srcCred := auth.NewCookieCredential(c)
 
 	//add by chenxiaoyu for public docker images pull
-	i.logger.Infof("srcAuthURL: %v ,srcRepo :%v",i.srcAuthURL,i.srcRepo)
+	i.logger.Infof("srcAuthURL: %v ,srcRepo :%v", i.srcAuthURL, i.srcRepo)
 	tokenServiceEndpoint := config.InternalTokenServiceEndpoint()
-	if len(i.srcAuthURL) >0{
+	if len(i.srcAuthURL) > 0 {
 		tokenServiceEndpoint = i.srcAuthURL
 	}
-	srcRepo :=  i.repository
-	if len(i.srcRepo) >0{
-		repoAndtTag := strings.Split(i.srcRepo,":")
+	srcRepo := i.repository
+	if len(i.srcRepo) > 0 {
+		repoAndtTag := strings.Split(i.srcRepo, ":")
 		srcRepo = repoAndtTag[0]
-		i.tags =append(i.tags,repoAndtTag[1])
+		i.tags = append(i.tags, repoAndtTag[1])
 	}
 	//"pull", "push", "*" change to pull
-	srcClient, err := newRepositoryClient(HARBOR,i.srcURL, i.insecure, srcCred,
+	srcClient, err := newRepositoryClient(HARBOR, i.srcURL, i.insecure, srcCred,
 		tokenServiceEndpoint, srcRepo, "repository", srcRepo, "pull")
 	if err != nil {
 		i.logger.Errorf("an error occurred while creating source repository client: %v", err)
@@ -172,8 +173,15 @@ func (i *Initializer) enter() (string, error) {
 	i.srcClient = srcClient
 
 	dstCred := auth.NewBasicAuthCredential(i.dstUsr, i.dstPwd)
-	dstClient, err := newRepositoryClient(i.dstType,i.dstURL, i.insecure, dstCred,
-		"", i.repository, "repository", i.repository, "pull", "push", "*")
+	log.Infof("i.dstUsr=%s,i.dstPwd=%s,dstCred=%s\n", i.dstUsr, i.dstPwd, dstCred)
+	log.Infof("dstURL=%s\n", i.dstURL)
+	dstTokenServiceEndpoint := ""
+	if i.dstType == HUAWEI {
+		dstTokenServiceEndpoint = fmt.Sprintf("%s/uam/auth/", i.dstURL)
+	}
+	log.Infof("dstTokenServiceEndpoint=%s\n", dstTokenServiceEndpoint)
+	dstClient, err := newRepositoryClient(i.dstType, i.dstURL, i.insecure, dstCred,
+		dstTokenServiceEndpoint, i.repository, "repository", i.repository, "pull", "push", "*")
 	if err != nil {
 		i.logger.Errorf("an error occurred while creating destination repository client: %v", err)
 		return "", err
@@ -189,8 +197,8 @@ func (i *Initializer) enter() (string, error) {
 		i.tags = tags
 	}
 
-	i.logger.Infof("initialization completed: project: %s, repository: %s, tags: %v, source URL: %s, destination URL: %s, insecure: %v, destination user: %s",
-		i.project, i.repository, i.tags, i.srcURL, i.dstURL, i.insecure, i.dstUsr)
+	i.logger.Infof("initialization completed: project: %s, repository: %s, tags: %v, source URL: %s, destination URL: %s, insecure: %v, destination user: %s ,desttype: %d",
+		i.project, i.repository, i.tags, i.srcURL, i.dstURL, i.insecure, i.dstUsr, i.dstType)
 
 	return StateCheck, nil
 }
@@ -220,7 +228,7 @@ func (c *Checker) enter() (string, error) {
 	}
 
 	//err = c.createProject(project.Public)
-	err = c.dstReg.CreateProject(project.Name,project.Public)
+	err = c.dstReg.CreateProject(project.Name, project.Public)
 	if err == nil {
 		c.logger.Infof("project %s is created on %s with user %s", c.project, c.dstURL, c.dstUsr)
 		return StatePullManifest, nil
@@ -321,13 +329,12 @@ func (m *ManifestPuller) enter() (string, error) {
 	}
 
 	name := m.repository
-	tag  := m.tags[0]
-	if len(m.srcRepo)>0{
-		nameAndTag := strings.Split(m.srcRepo,":")
+	tag := m.tags[0]
+	if len(m.srcRepo) > 0 {
+		nameAndTag := strings.Split(m.srcRepo, ":")
 		name = nameAndTag[0]
-		tag  = nameAndTag[1]
+		tag = nameAndTag[1]
 	}
-
 
 	acceptMediaTypes := []string{schema1.MediaTypeManifest, schema2.MediaTypeManifest}
 	digest, mediaType, payload, err := m.srcClient.PullManifest(tag, acceptMediaTypes)
@@ -402,7 +409,7 @@ func (b *BlobTransfer) enter() (string, error) {
 	name := b.repository
 	tag := b.tags[0]
 	for _, blob := range b.blobs {
-		b.logger.Infof("transferring blob %s from %s, to %s:%s with %s ...", blob,b.srcRepo, name, tag, b.dstURL)
+		b.logger.Infof("transferring blob %s from %s, to %s:%s with %s ...", blob, b.srcRepo, name, tag, b.dstURL)
 		size, data, err := b.srcClient.PullBlob(blob)
 		if err != nil {
 			b.logger.Errorf("an error occurred while pulling blob %s of %s:%s from %s: %v", blob, name, tag, b.srcURL, err)
@@ -486,7 +493,7 @@ func (m *ManifestPusher) enter() (string, error) {
 	return StatePullManifest, nil
 }
 
-func newRepositoryClient(repotye int,endpoint string, insecure bool, credential auth.Credential,
+func newRepositoryClient(repotye int, endpoint string, insecure bool, credential auth.Credential,
 	tokenServiceEndpoint, repository, scopeType, scopeName string,
 	scopeActions ...string) (registry.RepositoryInterface, error) {
 	authorizer := auth.NewStandardTokenAuthorizer(credential, insecure,
@@ -501,17 +508,17 @@ func newRepositoryClient(repotye int,endpoint string, insecure bool, credential 
 		userAgent: "harbor-registry-client",
 	}
 	var client registry.RepositoryInterface
-	if repotye == HUAWEI{
-		log.Debugf("create huawei repostory clinet with repo : %s \n",repository)
+	if repotye == HUAWEI {
+		log.Debugf("create huawei repostory clinet with repo : %v ,endpoint=%s,insecure=%v,store=%v,uam=%v\n", repository, endpoint, insecure, store, uam)
 		client, err = registry.NewRepositoryHuaweiWithModifiers(repository, endpoint, insecure, store, uam)
-		if err != nil{
-			log.Errorf("err create huawei repostory clinet %v \n ",err)
+		if err != nil {
+			log.Errorf("err create huawei repostory clinet %v \n ", err)
 		}
-	}else {
-		log.Debugf("create  standard clinet with repo :%s \n",repository)
+	} else {
+		log.Debugf("create  standard clinet with repo :%s \n", repository)
 		client, err = registry.NewRepositoryWithModifiers(repository, endpoint, insecure, store, uam)
-		if err != nil{
-			log.Errorf("err create standard repostory clinet %v \n ",err)
+		if err != nil {
+			log.Errorf("err create standard repostory clinet %v \n ", err)
 		}
 	}
 
@@ -520,8 +527,6 @@ func newRepositoryClient(repotye int,endpoint string, insecure bool, credential 
 	}
 	return client, nil
 }
-
-
 
 type userAgentModifier struct {
 	userAgent string
