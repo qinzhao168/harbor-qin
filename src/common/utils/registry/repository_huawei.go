@@ -27,6 +27,7 @@ import (
 
 	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/manifest/schema2"
+	"github.com/vmware/harbor/src/common/utils/log"
 
 	"github.com/vmware/harbor/src/common/utils"
 	registry_error "github.com/vmware/harbor/src/common/utils/registry/error"
@@ -270,10 +271,12 @@ func (r *RepositoryHuawei) DeleteTag(tag string) error {
 
 // BlobExist ...
 func (r *RepositoryHuawei) BlobExist(digest string) (bool, error) {
+	log.Infof("buildBlobURL(r.Endpoint.String(), r.Name, digest)=%s,%s,%s\n",buildBlobURL(r.Endpoint.String(), r.Name, digest),r.Name,digest)
 	req, err := http.NewRequest("GET", buildBlobURL(r.Endpoint.String(), r.Name, digest), nil)
 	if err != nil {
 		return false, err
 	}
+
 
 	resp, err := r.client.Do(req)
 	if err != nil {
@@ -307,6 +310,7 @@ func (r *RepositoryHuawei) PullBlob(digest string) (size int64, data io.ReadClos
 	if err != nil {
 		return
 	}
+
 
 	resp, err := r.client.Do(req)
 	if err != nil {
